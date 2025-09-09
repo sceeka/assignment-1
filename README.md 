@@ -1,0 +1,185 @@
+#  Two-Container Stack: Postgres + Python (ITCS 6190/8190 A1)
+
+This repo runs a tiny analytics stack: a PostgreSQL database seeded with sample `trips` data and a lightweight Python app that connects to the DB, runs a few queries, prints a JSON summary to stdout, and writes it to `out/summary.json`. Built to be reproducible and one-command runnable.
+
+---
+
+## What this stack does (2–3 sentences)
+
+- Brings up a Postgres service preloaded with a `trips(city, minutes, fare)` table and a Python app service that connects via service DNS (`db`) using environment variables.  
+- The app computes: **total trip count**, **average fare by city**, and **top trips by duration**, then prints and saves results.
+
+---
+
+## Repo structure
+
+```
+.
+├─ app/
+│  ├─ Dockerfile
+│  └─ main.py
+├─ db/
+│  ├─ Dockerfile
+│  └─ init.sql
+├─ compose.yml
+├─ Makefile
+└─ out/            # created on first run; contains summary.json
+```
+
+---
+
+## Configuration (env → values)
+
+The app expects these env vars (compose sets them):
+
+| App env var | Value (default) | Purpose |
+|---|---|---|
+| `DB_HOST` | `db` | Compose service name for Postgres |
+| `DB_PORT` | `5432` | Postgres port |
+| `DB_USER` | `appuser` | Must match DB service |
+| `DB_PASS` | `secretpw` | Must match DB service |
+| `DB_NAME` | `appdb` | Must match DB service |
+| `APP_TOP_N` | `10` | How many “top by minutes” rows to return |
+
+DB service env (already set in compose):
+
+| DB env | Value |
+|---|---|
+| `POSTGRES_USER` | `appuser` |
+| `POSTGRES_PASSWORD` | `secretpw` |
+| `POSTGRES_DB` | `appdb` |
+
+---
+
+## Exact commands to run / stop
+
+### Option A — With **Docker Compose** only (works everywhere)
+
+```bash
+# from repo root
+docker compose up --build
+# (first run may take a minute while images build and DB initializes)
+
+# in another terminal, to follow app logs
+docker compose logs -f app
+
+# stop + remove containers and volumes
+docker compose down -v
+```
+
+### Option B — Using **Makefile** (Linux/macOS/Git Bash)
+
+```bash
+# build, run, and produce fresh output in ./out/
+make all
+
+# stop & remove containers + volumes
+make down
+
+# full clean (containers/volumes + out/ folder), then run
+make all
+```
+
+>  On Windows PowerShell without Git Bash, `make` may not exist. Use **Option A** or install Make (e.g., via Git for Windows + Git Bash).
+
+---
+
+## Example output (copy/paste)
+
+**Console (stdout) from the `app` container:**
+```
+=== Summary ===
+{
+  "total_trips": 6,
+  "avg_fare_by_city": [
+    { "city": "Charlotte",      "avg_fare": 16.25 },
+    { "city": "New York",       "avg_fare": 19.0 },
+    { "city": "San Francisco",  "avg_fare": 20.25 }
+  ],
+  "top_by_minutes": [
+    { "city": "San Francisco", "minutes": 28, "fare": 29.30 },
+    { "city": "New York",      "minutes": 26, "fare": 27.10 },
+    { "city": "Charlotte",     "minutes": 21, "fare": 20.00 },
+    { "city": "Charlotte",     "minutes": 12, "fare": 12.50 },
+    { "city": "San Francisco", "minutes": 11, "fare": 11.20 },
+    { "city": "New York",      "minutes": 9,  "fare": 10.90 }
+  ]
+}
+```
+
+**File written to `out/summary.json`:**
+```json
+{
+  "total_trips": 6,
+  "avg_fare_by_city": [
+    { "city": "Charlotte", "avg_fare": 16.25 },
+    { "city": "New York", "avg_fare": 19.0 },
+    { "city": "San Francisco", "avg_fare": 20.25 }
+  ],
+  "top_by_minutes": [
+    { "city": "San Francisco", "minutes": 28, "fare": 29.3 },
+    { "city": "New York", "minutes": 26, "fare": 27.1 },
+    { "city": "Charlotte", "minutes": 21, "fare": 20.0 },
+    { "city": "Charlotte", "minutes": 12, "fare": 12.5 },
+    { "city": "San Francisco", "minutes": 11, "fare": 11.2 },
+    { "city": "New York", "minutes": 9, "fare": 10.9 }
+  ]
+}
+```
+
+> These results come from the seeded rows in `db/init.sql`.
+
+---
+
+## Where outputs are written
+
+- Inside the app container: `/out/summary.json`  
+- On your host: `./out/summary.json` (thanks to the bind mount `./out:/out` in `compose.yml`)
+
+---
+
+## Troubleshooting
+
+**1) App says “Waiting for database…” or exits with connection errors**  
+- The DB has a **healthcheck** and the app also retries. If it still fails:  
+  - Check DB logs: `docker compose logs -f db`  
+  - Increase healthcheck retries in `compose.yml` or app retry count in `main.py`.  
+  - Ensure env vars in `app` service match the DB creds (`appuser/secretpw/appdb`).
+
+**2) Permission denied writing `./out/summary.json`**  
+- Make sure the `out/` folder is writable by Docker:  
+  - Create/reset the folder:  
+    - Linux/macOS/Git Bash: `rm -rf out && mkdir -p out`  
+    - Windows PowerShell: `Remove-Item -Recurse -Force .\out; New-Item -ItemType Directory .\out`  
+  - On Windows Desktop, ensure file sharing is allowed for your drive in Docker settings.
+
+**3) `make` or `rm` not recognized on Windows**  
+- Use **Option A** (pure `docker compose` commands) or run the commands in **Git Bash**.  
+- For cleaning on PowerShell, use:
+  ```powershell
+  Remove-Item -Recurse -Force .\out; New-Item -ItemType Directory .\out
+  docker compose down -v
+  docker compose up --build
+  ```
+
+**4) Port 5432 already in use**  
+- This stack doesn’t expose Postgres by default. If you added a `ports:` mapping and hit conflicts, either stop your local Postgres or remove/adjust the mapping.
+
+**5) Stuck images/volumes from earlier attempts**
+```bash
+docker compose down -v
+docker system prune -f
+docker volume ls   # verify nothing unexpected remains
+```
+
+---
+
+## Quick Start (TL;DR)
+
+```bash
+# One-time: ensure Docker Desktop is running
+docker compose up --build          # run
+# ...view summary in logs and ./out/summary.json
+docker compose down -v             # stop & clean volumes
+```
+

@@ -1,0 +1,89 @@
+{
+  "total_trips": 20,
+  "avg_fare_by_city": [
+    {
+      "city": "Atlanta",
+      "avg_fare": 19.8
+    },
+    {
+      "city": "Charlotte",
+      "avg_fare": 16.25
+    },
+    {
+      "city": "Dallas",
+      "avg_fare": 15.0
+    },
+    {
+      "city": "Houston",
+      "avg_fare": 19.2
+    },
+    {
+      "city": "New York",
+      "avg_fare": 19.9
+    },
+    {
+      "city": "Orlando",
+      "avg_fare": 25.8
+    },
+    {
+      "city": "Portland",
+      "avg_fare": 29.5
+    },
+    {
+      "city": "San Francisco",
+      "avg_fare": 22.45
+    }
+  ],
+  "top_by_minutes": [
+    {
+      "city": "Portland",
+      "minutes": 39,
+      "fare": 40.1
+    },
+    {
+      "city": "Orlando",
+      "minutes": 34,
+      "fare": 34.9
+    },
+    {
+      "city": "San Francisco",
+      "minutes": 32,
+      "fare": 31.5
+    },
+    {
+      "city": "San Francisco",
+      "minutes": 28,
+      "fare": 29.3
+    },
+    {
+      "city": "Atlanta",
+      "minutes": 28,
+      "fare": 28.2
+    },
+    {
+      "city": "New York",
+      "minutes": 26,
+      "fare": 26.9
+    },
+    {
+      "city": "New York",
+      "minutes": 26,
+      "fare": 27.1
+    },
+    {
+      "city": "Houston",
+      "minutes": 24,
+      "fare": 24.8
+    },
+    {
+      "city": "Charlotte",
+      "minutes": 21,
+      "fare": 20.0
+    },
+    {
+      "city": "Dallas",
+      "minutes": 21,
+      "fare": 21.6
+    }
+  ]
+}
